@@ -72,3 +72,32 @@ func TestTreeDeserialization(t *testing.T) {
 		t.Errorf("反序列化后的对象与原始对象不相等\n原始对象: %+v\n反序列化对象: %+v", original, root)
 	}
 }
+
+func TestFormat(t *testing.T) {
+	ret := formatFileSize(512)
+	expected := "512B"
+	if ret != expected {
+		t.Fatalf("格式化错误")
+	}
+	ret1 := formatFileSize(1024)
+	expected1 := "1.00KB"
+	if ret1 != expected1 {
+		t.Fatalf("格式化错误")
+	}
+	ret2 := formatFileSize(1024 * 1024)
+	expected2 := "1.00MB"
+	if ret2 != expected2 {
+		t.Fatalf("格式化错误")
+	}
+
+	ret3 := formatFileSize(1024 * 1024 * 1024)
+	expected3 := "1.00GB"
+	if ret3 != expected3 {
+		t.Fatalf("格式化错误")
+	}
+	ret4 := formatFileSize(1024 * 1024 * 1024 * 1024)
+	expected4 := "1024.00GB"
+	if ret4 != expected4 {
+		t.Fatalf("格式化错误")
+	}
+}

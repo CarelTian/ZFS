@@ -2,10 +2,13 @@ package utils
 
 import (
 	"ZFS/logger"
+	"fmt"
 	"go.uber.org/zap"
 	"gopkg.in/yaml.v2"
 	"log"
 	"os"
+	"path/filepath"
+	"strings"
 )
 
 func InitACL(filename string) *ZFSNode {
@@ -40,6 +43,40 @@ func InitACL(filename string) *ZFSNode {
 		return root
 	}
 
+}
+
+func FormatFileSize(size int) string {
+	const (
+		KB = 1024
+		MB = 1024 * KB
+		GB = 1024 * MB
+	)
+	if size < KB {
+		return fmt.Sprintf("%dB", size)
+	} else if size < MB {
+		return fmt.Sprintf("%.2fKB", float64(size)/KB)
+	} else if size < GB {
+		return fmt.Sprintf("%.2fMB", float64(size)/MB)
+	} else {
+		return fmt.Sprintf("%.2fGB", float64(size)/GB)
+	}
+}
+
+func IsInStorage(root, target string) (bool, error) {
+	absRoot, err := filepath.Abs(root)
+	if err != nil {
+		return false, err
+	}
+	absTarget, err := filepath.Abs(target)
+	if err != nil {
+		return false, err
+	}
+	relative, err := filepath.Rel(absRoot, absTarget)
+	if err != nil {
+		return false, err
+	}
+	// 如果relative以".."开头，则说明target不在root下
+	return !strings.HasPrefix(relative, ".."), nil
 }
 
 type ZFSNode struct {

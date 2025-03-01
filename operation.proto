@@ -4,16 +4,6 @@ package rpc;
 
 option go_package = "./grpc";
 
-// 定义计算请求
-message CalcRequest {
-  int32 num1 = 1;
-  int32 num2 = 2;
-}
-
-// 定义计算响应
-message CalcResponse {
-  int32 result = 1;
-}
 message ListDirectoryRequest {
   string directory_path = 1;
 }
@@ -22,9 +12,8 @@ message FileEntry {
   string name = 1;         // 文件或目录名
   bool is_directory = 2;   // 是否为目录
   int64 size = 3;          // 文件大小（字节），目录可设置为0或忽略
-  // 可根据需要添加修改时间、权限等字段
 }
-// ListDirectory响应消息，返回目录中的所有文件和目录信息
+
 message ListDirectoryResponse {
   repeated FileEntry entries = 1;
 }
