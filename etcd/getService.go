@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"sync"
 	"time"
 
 	clientv3 "go.etcd.io/etcd/client/v3"
@@ -12,7 +13,7 @@ import (
 const servicePrefix = "/services/zfs/"
 
 // 通过 Watch 机制监控 etcd 中的服务变化
-func DiscoverService(ctx context.Context, etcdEndpoints string) error {
+func DiscoverService(ctx context.Context, etcdEndpoints string, nodes *sync.Map) error {
 	// 创建 etcd 客户端
 	cli, err := clientv3.New(clientv3.Config{
 		Endpoints:   []string{etcdEndpoints},
@@ -30,6 +31,9 @@ func DiscoverService(ctx context.Context, etcdEndpoints string) error {
 	}
 
 	for _, kv := range resp.Kvs {
+		key := string(kv.Key)
+		value := string(kv.Value)
+		nodes.Store(key, value)
 		log.Printf("发现初始服务: %s -> %s", kv.Key, kv.Value)
 	}
 
@@ -51,10 +55,14 @@ func DiscoverService(ctx context.Context, etcdEndpoints string) error {
 				continue
 			}
 			for _, ev := range watchResp.Events {
+				key := string(ev.Kv.Key)
 				switch ev.Type {
 				case clientv3.EventTypePut:
+					value := string(ev.Kv.Value)
+					nodes.Store(key, value)
 					log.Printf("服务添加/更新: %s -> %s", ev.Kv.Key, ev.Kv.Value)
 				case clientv3.EventTypeDelete:
+					nodes.Delete(key)
 					log.Printf("服务移除: %s", ev.Kv.Key)
 				}
 			}

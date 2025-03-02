@@ -79,6 +79,12 @@ func IsInStorage(root, target string) (bool, error) {
 	return !strings.HasPrefix(relative, ".."), nil
 }
 
+func Rename(name string, count int8) string {
+	parts := strings.Split(name, ".")
+	parts[0] = fmt.Sprintf("%s(%d)", parts[0], count)
+	return strings.Join(parts, ".")
+}
+
 type ZFSNode struct {
 	Name     string     `yaml:"name"`
 	Children []*ZFSNode `yaml:"children,omitempty"`

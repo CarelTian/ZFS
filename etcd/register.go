@@ -9,8 +9,12 @@ import (
 	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
+//etcd --listen-client-urls http://localhost:2379 \
+//--advertise-client-urls http://localhost:2379 \
+//--listen-peer-urls http://localhost:2380 \
+//--initial-advertise-peer-urls http://localhost:2380
+
 // RegisterService 注册服务到 etcd，并自动续租。
-// 返回的 cleanup 函数可用于注销服务和关闭 etcd 客户端。
 func RegisterService(ctx context.Context, etcdEndpoints, serviceAddr, nodeName string, ttl int64, dialTimeout int) (cleanup func(), err error) {
 	// 创建 etcd 客户端
 	cli, err := clientv3.New(clientv3.Config{
@@ -65,7 +69,6 @@ func RegisterService(ctx context.Context, etcdEndpoints, serviceAddr, nodeName s
 
 	// 返回一个回调函数，用于注销服务和关闭 etcd 客户端
 	cleanup = func() {
-		// 删除注册信息
 		_, err := cli.Delete(context.Background(), key)
 		if err != nil {
 			log.Printf("删除键 %s 时出错: %v", key, err)
