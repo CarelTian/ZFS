@@ -5,11 +5,14 @@ import (
 	"ZFS/etcd"
 	"ZFS/logger"
 	"ZFS/utils"
+	"bufio"
 	"context"
 	"fmt"
 	"go.uber.org/zap"
+	"io"
 	"log"
 	"os"
+	"strings"
 	"sync"
 )
 
@@ -27,8 +30,8 @@ func Start() {
 
 	}
 	logger.Log.Info("ACL模块初始化成功")
-	etcdEndpoint := conf.Etcd.EtcdEndpoints // 例如 "localhost:2379"
-	serviceAddr := conf.Etcd.Address        // 例如 "http://localhost:8080"
+	etcdEndpoint := conf.Etcd.EtcdEndpoints
+	serviceAddr := conf.Etcd.Address
 	ttl := conf.Etcd.TTL
 	dialTimeout := conf.Etcd.DialTimeout
 	nodeName := conf.Node.Name
@@ -45,19 +48,43 @@ func Start() {
 			logger.Log.Error("服务发现异常", zap.Error(err))
 		}
 	}()
+	go StartServer(conf.Etcd.Address)
 	ch := make(chan string)
-	go readInputV2(os.Stdin, ch)
-	for input := range ch {
-		if input == "ls" {
-			nodes.Range(func(key, value any) bool {
-				fmt.Println(key, value)
-				return true
-			})
-		} else {
-			fmt.Println("Received:", input)
+	manager := NewManager("root", &nodes)
+	mutex := make(chan struct{})
+	go func() {
+		mutex <- struct{}{}
+	}()
+	go func(r io.Reader, op chan string) {
+		reader := bufio.NewReader(r)
+		for {
+			<-mutex
+			fmt.Print(manager.prefix())
+			input, err := reader.ReadString('\n')
+			if err != nil {
+				if err == io.EOF {
+					os.Exit(0)
+				} else {
+					log.Fatal(err)
+				}
+			}
+			input = strings.TrimSpace(input)
+			if input == "exit" {
+				fmt.Println("bye")
+				os.Exit(0)
+			}
+			op <- input
 		}
+	}(os.Stdin, ch) // 立即传参执行
 
+	for input := range ch {
+		ret := manager.interpret(input)
+		if len(ret) != 0 {
+			fmt.Println(ret)
+		}
+		go func() {
+			mutex <- struct{}{}
+		}()
 	}
-
 	cleanup()
 }

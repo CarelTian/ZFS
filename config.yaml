@@ -4,15 +4,9 @@ node:
 
 etcd:
   etcdEndpoints: "http://127.0.0.1:2379"
-  address: "192.168.1.10:9000"
+  address: "127.0.0.1:9000"
   ttl: 10
   dialTimeout: 5
-
-mysql:
-  server: "localhost"
-  username: "root"
-  password: "123456"
-  port: 3306
 
 log:
   Enable: "false"

@@ -33,7 +33,7 @@ func RegisterService(ctx context.Context, etcdEndpoints, serviceAddr, nodeName s
 	}
 
 	// 注册服务，将 key 与租约绑定
-	key := fmt.Sprintf("/services/zfs/%s", nodeName)
+	key := fmt.Sprintf("%s", nodeName)
 	_, err = cli.Put(ctx, key, serviceAddr, clientv3.WithLease(leaseResp.ID))
 	if err != nil {
 		cli.Close()

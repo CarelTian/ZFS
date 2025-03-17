@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"ZFS/utils"
 	"bytes"
 	"context"
 	"fmt"
@@ -46,7 +47,7 @@ func TestListDirectory(t *testing.T) {
 	file2.Close()
 
 	// 实例化 fileServer
-	s := &fileServer{}
+	s := &FileServer{}
 
 	// 构造 ListDirectory 请求，传入相对路径 "testdir"
 	req := &pb.ListDirectoryRequest{
@@ -60,7 +61,9 @@ func TestListDirectory(t *testing.T) {
 	// 检查返回的条目是否包含 file1.txt 和 subdir
 	var fileFound, dirFound bool
 	for _, entry := range resp.Entries {
-		fmt.Println(entry)
+		e := entry
+		fmt.Printf("%s %s\n", e.Name, utils.FormatFileSize(e.Size))
+
 		if entry.Name == "file1.txt" && !entry.IsDirectory {
 			fileFound = true
 		}
@@ -89,33 +92,23 @@ func (d *dummyDownloadFileServer) Send(chunk *pb.FileChunk) error {
 	return nil
 }
 
-// Context 返回 dummy stream 的上下文
 func (d *dummyDownloadFileServer) Context() context.Context {
 	return d.ctx
 }
-
-// SetHeader 设置 header，这里不做处理
 func (d *dummyDownloadFileServer) SetHeader(md metadata.MD) error {
 	return nil
 }
-
-// SendHeader 发送 header，这里不做处理
 func (d *dummyDownloadFileServer) SendHeader(md metadata.MD) error {
 	return nil
 }
-
-// SetTrailer 设置 trailer，这里不做处理
 func (d *dummyDownloadFileServer) SetTrailer(md metadata.MD) {}
-
-// SendMsg 发送消息，这里不做处理
 func (d *dummyDownloadFileServer) SendMsg(m interface{}) error {
 	return nil
 }
-
-// RecvMsg 接收消息，这里不做处理
 func (d *dummyDownloadFileServer) RecvMsg(m interface{}) error {
 	return nil
 }
+
 func TestDownloadFile(t *testing.T) {
 	storageRoot := "./storage"
 	// 确保 storage 目录存在
@@ -135,7 +128,7 @@ func TestDownloadFile(t *testing.T) {
 
 	// 实例化 fileServer，注意这里应确保 DownloadFile 方法内部会使用 storage 目录，
 	// 即内部会做类似 filepath.Join(storageRoot, req.GetFilePath()) 的处理
-	s := &fileServer{}
+	s := &FileServer{}
 
 	// 构造 dummy stream 用于接收文件块
 	dummyStream := &dummyDownloadFileServer{ctx: context.Background()}

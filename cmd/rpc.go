@@ -5,19 +5,45 @@ import (
 	"ZFS/utils"
 	"context"
 	"errors"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 	"io"
+	"net"
 	"os"
 	"path/filepath"
 )
 
-type fileServer struct {
+type FileServer struct {
 	pb.UnimplementedFileServiceServer
 }
 
+type FileService struct{}
+
 const root = "./storage"
 
+func StartServer(addr string) {
+	lis, err := net.Listen("tcp", addr)
+	if err != nil {
+		panic(err)
+	}
+	grpcServer := grpc.NewServer()
+
+	pb.RegisterFileServiceServer(grpcServer, &FileServer{})
+	if err := grpcServer.Serve(lis); err != nil {
+		panic(err)
+	}
+}
+
+func GetConn(addr string) (*grpc.ClientConn, error) {
+	conn, err := grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		return nil, err
+	}
+	return conn, nil
+}
+
 // 实现 ListDirectory 方法
-func (s *fileServer) ListDirectory(ctx context.Context, req *pb.ListDirectoryRequest) (*pb.ListDirectoryResponse, error) {
+func (s *FileServer) ListDirectory(ctx context.Context, req *pb.ListDirectoryRequest) (*pb.ListDirectoryResponse, error) {
 
 	dirPath := req.GetDirectoryPath()
 	fullPath := filepath.Join(root, dirPath)
@@ -30,8 +56,13 @@ func (s *fileServer) ListDirectory(ctx context.Context, req *pb.ListDirectoryReq
 	if !inStorage {
 		return nil, errors.New("访问被拒绝：只能访问storage目录下的内容")
 	}
-
 	// 读取指定目录
+	if _, err := os.Stat(fullPath); os.IsNotExist(err) {
+		return &pb.ListDirectoryResponse{Entries: entries}, nil
+	} else if err != nil {
+		return nil, err
+	}
+
 	files, err := os.ReadDir(fullPath)
 	if err != nil {
 		return nil, err
@@ -51,7 +82,7 @@ func (s *fileServer) ListDirectory(ctx context.Context, req *pb.ListDirectoryReq
 	return &pb.ListDirectoryResponse{Entries: entries}, nil
 }
 
-func (s *fileServer) DownloadFile(req *pb.DownloadFileRequest, stream pb.FileService_DownloadFileServer) error {
+func (s *FileServer) DownloadFile(req *pb.DownloadFileRequest, stream pb.FileService_DownloadFileServer) error {
 	filePath := filepath.Join(root, req.GetFilePath())
 	inStorage, err := utils.IsInStorage(root, filePath)
 	if err != nil {
@@ -84,4 +115,5 @@ func (s *fileServer) DownloadFile(req *pb.DownloadFileRequest, stream pb.FileSer
 		}
 	}
 	return nil
+
 }

@@ -10,7 +10,7 @@ import (
 	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
-const servicePrefix = "/services/zfs/"
+const servicePrefix = ""
 
 // 通过 Watch 机制监控 etcd 中的服务变化
 func DiscoverService(ctx context.Context, etcdEndpoints string, nodes *sync.Map) error {
@@ -34,12 +34,12 @@ func DiscoverService(ctx context.Context, etcdEndpoints string, nodes *sync.Map)
 		key := string(kv.Key)
 		value := string(kv.Value)
 		nodes.Store(key, value)
-		log.Printf("发现初始服务: %s -> %s", kv.Key, kv.Value)
+		//log.Printf("发现初始服务: %s -> %s", kv.Key, kv.Value)
 	}
 
 	// 使用 Watch 监控服务目录的变化
 	watchChan := cli.Watch(ctx, servicePrefix, clientv3.WithPrefix())
-	log.Println("开始监视服务注册表...")
+	//log.Println("开始监视服务注册表...")
 	for {
 		select {
 		case <-ctx.Done():

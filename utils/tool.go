@@ -45,7 +45,7 @@ func InitACL(filename string) *ZFSNode {
 
 }
 
-func FormatFileSize(size int) string {
+func FormatFileSize(size int64) string {
 	const (
 		KB = 1024
 		MB = 1024 * KB
