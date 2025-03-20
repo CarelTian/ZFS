@@ -1,0 +1,12 @@
+services:
+  etcd:
+    build: ./etcd
+    ports:
+      - "2379:2379"
+      - "2380:2380"
+  zfs:
+    build: ./src
+    stdin_open: true
+    tty: true
+    ports:
+      - "9000:9000"

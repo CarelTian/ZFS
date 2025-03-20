@@ -1,0 +1,34 @@
+syntax = "proto3";
+
+package rpc;
+
+option go_package = "./grpc";
+
+message ListDirectoryRequest {
+  string directory_path = 1;
+}
+
+message FileEntry {
+  string name = 1;         // 文件或目录名
+  bool is_directory = 2;   // 是否为目录
+  int64 size = 3;          // 文件大小（字节），目录可设置为0或忽略
+}
+
+message ListDirectoryResponse {
+  repeated FileEntry entries = 1;
+}
+// DownloadFile请求消息，包含要下载的文件路径
+message DownloadFileRequest {
+  string file_path = 1;
+}
+// 文件数据分块消息，用于流式传输文件内容
+message FileChunk {
+  bytes content = 1;
+}
+// 计算服务
+service FileService {
+  // 查询目录：传入目录路径，返回该目录下所有文件/目录的列表
+  rpc ListDirectory (ListDirectoryRequest) returns (ListDirectoryResponse);
+  // 下载文件：传入文件路径，服务器以流方式传输文件数据
+  rpc DownloadFile (DownloadFileRequest) returns (stream FileChunk);
+}
