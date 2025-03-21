@@ -3,9 +3,9 @@ node:
   storage: "/data/files"
 
 etcd:
-  #etcdEndpoints: "http://127.0.0.1:2379"
-  etcdEndpoints: http://etcd:2379
-  address: "0.0.0.0:9000"
+  etcdEndpoints: "http://127.0.0.1:2379"
+  #etcdEndpoints: http://etcd:2379
+  address: "127.0.0.1:9000"
   ttl: 10
   dialTimeout: 5
 
