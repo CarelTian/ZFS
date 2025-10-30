@@ -2,6 +2,30 @@ node:
   name: node1
   storage: "/data/files"
 
+# 存储配置
+storage:
+  # 存储类型：local 或 s3
+  type: "local"
+  # 本地存储根目录（当type为local时使用）
+  localRoot: "./storage"
+  # 下载文件保存目录
+  dataRoot: "./data"
+  # S3配置（当type为s3时使用）
+  s3:
+    bucket: "your-bucket-name"
+    region: "us-east-1"
+    # 可选：S3对象key前缀
+    prefix: "zfs/"
+    # 认证方式1: 使用访问密钥（不推荐在生产环境中硬编码）
+    accessKeyId: ""
+    secretAccessKey: ""
+    # 认证方式2: 使用环境变量或IAM角色（推荐）
+    # 留空则使用默认凭证链（环境变量、~/.aws/credentials、IAM角色等）
+    # 自定义endpoint（可选，用于MinIO等S3兼容存储）
+    endpoint: ""
+    # 是否使用路径风格访问（用于MinIO等）
+    forcePathStyle: false
+
 etcd:
   etcdEndpoints: "http://127.0.0.1:2379"
   #etcdEndpoints: http://etcd:2379

@@ -7,6 +7,7 @@ import (
 
 type Config struct {
 	Node    NodeConfig                 `yaml:"node"`
+	Storage StorageConfig              `yaml:"storage"`
 	Etcd    EtcdConfig                 `yaml:"etcd"`
 	MySQL   MysqlConfig                `yaml:"mysql"`
 	Kafka   struct{ Brokers []string } `yaml:"kafka"`
@@ -40,6 +41,23 @@ type EtcdConfig struct {
 type NodeConfig struct {
 	Name    string `yaml:"name"` // 节点名字
 	Storage string `yaml:"storage"`
+}
+
+type StorageConfig struct {
+	Type      string      `yaml:"type"`      // 存储类型：local 或 s3
+	LocalRoot string      `yaml:"localRoot"` // 本地存储根目录
+	DataRoot  string      `yaml:"dataRoot"`  // 下载文件保存目录
+	S3        S3Config    `yaml:"s3"`        // S3配置
+}
+
+type S3Config struct {
+	Bucket           string `yaml:"bucket"`           // S3存储桶名称
+	Region           string `yaml:"region"`           // AWS区域
+	Prefix           string `yaml:"prefix"`           // 对象key前缀
+	AccessKeyId      string `yaml:"accessKeyId"`      // 访问密钥ID
+	SecretAccessKey  string `yaml:"secretAccessKey"`  // 访问密钥
+	Endpoint         string `yaml:"endpoint"`         // 自定义endpoint（用于MinIO等）
+	ForcePathStyle   bool   `yaml:"forcePathStyle"`   // 是否使用路径风格访问
 }
 
 func LoadConfig(filename string) (*Config, error) {

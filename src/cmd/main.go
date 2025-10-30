@@ -3,13 +3,13 @@ package cmd
 import (
 	"ZFS/config"
 	"ZFS/etcd"
-	"go.uber.org/zap"
-
 	"ZFS/logger"
+	"ZFS/storage"
 	"ZFS/utils"
 	"bufio"
 	"context"
 	"fmt"
+	"go.uber.org/zap"
 	"io"
 	"log"
 	"os"
@@ -39,6 +39,15 @@ func Start() {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
+	
+	// 初始化存储层
+	stor, err := storage.NewStorage(ctx, conf)
+	if err != nil {
+		logger.Log.Error("初始化存储层失败", zap.Error(err))
+		log.Fatalf("初始化存储层失败: %v", err)
+	}
+	logger.Log.Info("存储层初始化成功", zap.String("type", conf.Storage.Type))
+	
 	cleanup, err := etcd.RegisterService(ctx, etcdEndpoint, serviceAddr, nodeName, int64(ttl), dialTimeout)
 	if err != nil {
 		logger.Log.Error("服务注册失败", zap.Error(err))
@@ -49,9 +58,13 @@ func Start() {
 			logger.Log.Error("服务发现异常", zap.Error(err))
 		}
 	}()
-	go StartServer(conf.Etcd.Address)
+	go StartServer(conf.Etcd.Address, stor)
 	ch := make(chan string)
-	manager := NewManager("root", &nodes)
+	dataRoot := conf.Storage.DataRoot
+	if dataRoot == "" {
+		dataRoot = "./data"
+	}
+	manager := NewManager("root", &nodes, dataRoot)
 	mutex := make(chan struct{})
 	go func() {
 		mutex <- struct{}{}
