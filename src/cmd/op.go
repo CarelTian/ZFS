@@ -21,6 +21,7 @@ type Manager struct {
 	nodes        *sync.Map
 	currentNode  string
 	currentConn  *grpc.ClientConn
+	dataRoot     string // 下载文件保存目录
 }
 
 func ErrorMsg(msg string) string {
@@ -29,11 +30,15 @@ func ErrorMsg(msg string) string {
 
 type Command func(manager *Manager, args []string) string
 
-func NewManager(nodeName string, nodes *sync.Map) *Manager {
+func NewManager(nodeName string, nodes *sync.Map, dataRoot string) *Manager {
+	if dataRoot == "" {
+		dataRoot = "./data"
+	}
 	return &Manager{
 		nodeName:     nodeName,
 		nodes:        nodes,
 		relativePath: []string{},
+		dataRoot:     dataRoot,
 	}
 }
 
@@ -165,7 +170,7 @@ func get(m *Manager, args []string) string {
 	if err != nil {
 		return ErrorMsg(fmt.Sprintf("远程调用出错：%v", err))
 	}
-	localDir := filepath.Join("data", m.currentNode)
+	localDir := filepath.Join(m.dataRoot, m.currentNode)
 	// 确保目录存在
 	if err := os.MkdirAll(localDir, os.ModePerm); err != nil {
 		return ErrorMsg(fmt.Sprintf("创建目录失败：%v", err))

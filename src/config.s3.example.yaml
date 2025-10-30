@@ -1,0 +1,54 @@
+# S3存储配置示例
+# 复制此文件为 config.yaml 并根据您的环境修改配置
+
+node:
+  name: node1
+  storage: "/data/files"
+
+# 存储配置 - S3模式
+storage:
+  # 存储类型：local 或 s3
+  type: "s3"
+  # 本地存储根目录（当type为local时使用）
+  localRoot: "./storage"
+  # 下载文件保存目录
+  dataRoot: "./data"
+  # S3配置（当type为s3时使用）
+  s3:
+    # S3存储桶名称
+    bucket: "your-bucket-name"
+    # AWS区域
+    region: "us-east-1"
+    # 可选：S3对象key前缀，所有文件都会存储在这个前缀下
+    prefix: "zfs/"
+    # 认证方式1: 使用访问密钥（不推荐在生产环境中硬编码）
+    # 如果留空，将使用环境变量或~/.aws/credentials或IAM角色
+    accessKeyId: ""
+    secretAccessKey: ""
+    # 认证方式2: 使用环境变量（推荐）
+    # export AWS_ACCESS_KEY_ID="your-access-key-id"
+    # export AWS_SECRET_ACCESS_KEY="your-secret-access-key"
+    # 自定义endpoint（可选，用于MinIO等S3兼容存储）
+    # 例如 MinIO: "http://localhost:9000"
+    # 例如阿里云OSS: "https://oss-cn-hangzhou.aliyuncs.com"
+    endpoint: ""
+    # 是否使用路径风格访问（用于MinIO等，AWS S3设为false）
+    forcePathStyle: false
+
+etcd:
+  etcdEndpoints: "http://127.0.0.1:2379"
+  #etcdEndpoints: http://etcd:2379
+  address: "127.0.0.1:9000"
+  ttl: 10
+  dialTimeout: 5
+
+log:
+  Enable: "false"
+  level: "info"
+  encoding: "json"
+  outputPaths:
+    - "stdout"
+    - "app.log"
+  errorOutputPaths:
+    - "stderr"
+    - "app_err.log"

@@ -2,33 +2,29 @@ package cmd
 
 import (
 	pb "ZFS/grpc"
-	"ZFS/utils"
+	"ZFS/storage"
 	"context"
-	"errors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"io"
 	"net"
-	"os"
-	"path/filepath"
 )
 
 type FileServer struct {
 	pb.UnimplementedFileServiceServer
+	storage storage.Storage
 }
 
 type FileService struct{}
 
-const root = "./storage"
-
-func StartServer(addr string) {
+func StartServer(addr string, stor storage.Storage) {
 	lis, err := net.Listen("tcp", addr)
 	if err != nil {
 		panic(err)
 	}
 	grpcServer := grpc.NewServer()
 
-	pb.RegisterFileServiceServer(grpcServer, &FileServer{})
+	pb.RegisterFileServiceServer(grpcServer, &FileServer{storage: stor})
 	if err := grpcServer.Serve(lis); err != nil {
 		panic(err)
 	}
@@ -44,62 +40,42 @@ func GetConn(addr string) (*grpc.ClientConn, error) {
 
 // 实现 ListDirectory 方法
 func (s *FileServer) ListDirectory(ctx context.Context, req *pb.ListDirectoryRequest) (*pb.ListDirectoryResponse, error) {
-
 	dirPath := req.GetDirectoryPath()
-	fullPath := filepath.Join(root, dirPath)
+	
+	// 使用storage层列出目录
+	files, err := s.storage.ListDirectory(ctx, dirPath)
+	if err != nil {
+		return nil, err
+	}
+	
+	// 转换为protobuf格式
 	var entries []*pb.FileEntry
-
-	inStorage, err := utils.IsInStorage(root, fullPath)
-	if err != nil {
-		return nil, err
-	}
-	if !inStorage {
-		return nil, errors.New("访问被拒绝：只能访问storage目录下的内容")
-	}
-	if _, err := os.Stat(fullPath); os.IsNotExist(err) {
-		return &pb.ListDirectoryResponse{Entries: entries}, nil
-	} else if err != nil {
-		return nil, err
-	}
-
-	files, err := os.ReadDir(fullPath)
-	if err != nil {
-		return nil, err
-	}
 	for _, file := range files {
-		info, err := file.Info()
-		if err != nil {
-			continue
-		}
 		entry := &pb.FileEntry{
-			Name:        file.Name(),
-			IsDirectory: file.IsDir(),
-			Size:        info.Size(),
+			Name:        file.Name,
+			IsDirectory: file.IsDirectory,
+			Size:        file.Size,
 		}
 		entries = append(entries, entry)
 	}
+	
 	return &pb.ListDirectoryResponse{Entries: entries}, nil
 }
 
 func (s *FileServer) DownloadFile(req *pb.DownloadFileRequest, stream pb.FileService_DownloadFileServer) error {
-	filePath := filepath.Join(root, req.GetFilePath())
-	inStorage, err := utils.IsInStorage(root, filePath)
+	filePath := req.GetFilePath()
+	
+	// 使用storage层下载文件
+	reader, err := s.storage.DownloadFile(stream.Context(), filePath)
 	if err != nil {
 		return err
 	}
-	if !inStorage {
-		return errors.New("访问被拒绝：只能下载storage目录下的文件")
-	}
+	defer reader.Close()
 
-	file, err := os.Open(filePath)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
+	// 流式传输文件内容
 	buf := make([]byte, 1024)
 	for {
-		n, err := file.Read(buf)
+		n, err := reader.Read(buf)
 		if err != nil {
 			if err == io.EOF {
 				break
@@ -114,5 +90,4 @@ func (s *FileServer) DownloadFile(req *pb.DownloadFileRequest, stream pb.FileSer
 		}
 	}
 	return nil
-
 }
